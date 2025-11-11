@@ -1,8 +1,7 @@
-# app.py
 import streamlit as st
 import os
 
-# LangChain 最新バージョン用
+# 最新 LangChain
 from langchain.chat_models import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import (
@@ -11,13 +10,13 @@ from langchain_core.prompts import (
     HumanMessagePromptTemplate
 )
 
-# Streamlit Community Cloudの「Secrets」からOpenAI API keyを取得
-os.environ["OPENAI_API_KEY"] = st.secrets.OpenAIAPI.openai_api_key
+# Streamlit SecretsからAPIキーを取得
+os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIAPI"]["openai_api_key"]
 
-# Chatモデルの初期化（最新版）
+# Chatモデルの初期化
 chat = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
 
-# プロンプトのテンプレート
+# プロンプトテンプレート
 system_template = (
     "あなたは、{source_lang} を {target_lang}に翻訳する優秀な翻訳アシスタントです。翻訳結果以外は出力しないでください。"
 )
@@ -36,14 +35,13 @@ if "response" not in st.session_state:
 # LLMとやりとりする関数
 def communicate():
     text = st.session_state["user_input"]
-    # 最新LangChainでは predict_messages を使用
     messages = chat_prompt.format_prompt(
         source_lang=source_lang, target_lang=target_lang, text=text
     ).to_messages()
     response = chat.predict_messages(messages)
     st.session_state["response"] = response.content
 
-# ユーザーインターフェイスの構築
+# UI
 st.title("翻訳アプリ")
 st.write("LangChainを使った翻訳アプリです。")
 
