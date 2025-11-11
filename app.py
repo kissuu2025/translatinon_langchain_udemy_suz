@@ -2,10 +2,10 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain.prompts.chat import (
+from langchain_core.prompts import (
     ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-    SystemMessagePromptTemplate
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate
 )
 import os
 
