@@ -1,24 +1,32 @@
 import streamlit as st
-import os
-
-# 最新 LangChain
-from langchain.chat_models import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import (
     ChatPromptTemplate,
     SystemMessagePromptTemplate,
-    HumanMessagePromptTemplate
+    HumanMessagePromptTemplate,
 )
+import os
 
-# Streamlit SecretsからAPIキーを取得
+# ==============================
+# OpenAI APIキーの設定
+# ==============================
+# Streamlit Cloud の [Secrets] に以下のように記載してください：
+# [OpenAIAPI]
+# openai_api_key = "sk-xxxxx"
+
 os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIAPI"]["openai_api_key"]
 
-# Chatモデルの初期化
-chat = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
+# ==============================
+# モデル設定
+# ==============================
+chat = ChatOpenAI(model="gpt-4o-mini")  # 高速・高精度モデル
 
+# ==============================
 # プロンプトテンプレート
+# ==============================
 system_template = (
-    "あなたは、{source_lang} を {target_lang}に翻訳する優秀な翻訳アシスタントです。翻訳結果以外は出力しないでください。"
+    "あなたは優秀な翻訳アシスタントです。{source_lang}の文章を{target_lang}に翻訳してください。"
+    "翻訳結果のみを出力し、説明や補足は一切書かないでください。"
 )
 system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
 
@@ -29,28 +37,41 @@ chat_prompt = ChatPromptTemplate.from_messages(
     [system_message_prompt, human_message_prompt]
 )
 
+# ==============================
+# 状態管理
+# ==============================
 if "response" not in st.session_state:
     st.session_state["response"] = ""
 
-# LLMとやりとりする関数
+# ==============================
+# 翻訳関数
+# ==============================
 def communicate():
     text = st.session_state["user_input"]
+    if not text.strip():
+        st.warning("翻訳する文章を入力してください。")
+        return
+
     messages = chat_prompt.format_prompt(
         source_lang=source_lang, target_lang=target_lang, text=text
     ).to_messages()
-    response = chat.predict_messages(messages)
+
+    response = chat.invoke(messages)
     st.session_state["response"] = response.content
 
-# UI
-st.title("翻訳アプリ")
-st.write("LangChainを使った翻訳アプリです。")
+# ==============================
+# Streamlit UI
+# ==============================
+st.title("🌍 翻訳アプリ")
+st.caption("LangChain + OpenAI API を使った多言語翻訳ツール")
 
 options = ["日本語", "英語", "スペイン語", "ドイツ語", "フランス語", "中国語"]
-source_lang = st.selectbox(label="翻訳元", options=options)
-target_lang = st.selectbox(label="翻訳先", options=options)
-st.text_input("翻訳する文章を入力してください。", key="user_input")
-st.button("翻訳", type="primary", on_click=communicate)
+source_lang = st.selectbox("翻訳元の言語", options)
+target_lang = st.selectbox("翻訳先の言語", options)
 
-if st.session_state.get("user_input", "") != "":
-    st.write("翻訳結果:")
-    st.write(st.session_state["response"])
+st.text_input("翻訳したい文章を入力してください", key="user_input")
+st.button("翻訳する", type="primary", on_click=communicate)
+
+if st.session_state["response"]:
+    st.subheader("翻訳結果")
+    st.success(st.session_state["response"])
